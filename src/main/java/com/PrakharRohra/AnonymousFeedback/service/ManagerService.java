@@ -38,6 +38,7 @@ public class ManagerService {
     // Convert Feedback entity to ReviewDTO
     private ReviewDTO convertToReviewDTO(Feedback feedback) {
         ReviewDTO dto = new ReviewDTO();
+        dto.setReceiverName(userDAO.getById(feedback.getReceiver().getId()).getName());
         dto.setId(feedback.getId());
         dto.setReceiverId(feedback.getReceiver().getId()); // Set receiver (subordinate) ID
         dto.setMessage(feedback.getMessage());

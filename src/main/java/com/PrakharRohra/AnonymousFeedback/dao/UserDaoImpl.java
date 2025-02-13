@@ -2,6 +2,7 @@ package com.PrakharRohra.AnonymousFeedback.dao;
 
 import com.PrakharRohra.AnonymousFeedback.model.entity.User;
 import com.PrakharRohra.AnonymousFeedback.model.dto.UserDTO;
+import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
 import com.PrakharRohra.AnonymousFeedback.model.response.UserResponse;
 import com.PrakharRohra.AnonymousFeedback.util.PasswordValidator;
 import jakarta.persistence.EntityManager;
@@ -37,7 +38,9 @@ public class UserDaoImpl implements UserDAO{
     @Override
     public void update(UserDTO user, User tempUser,boolean isHR) {
 //        tempUser.setEmail(user.getEmail());
+        if(user.getName() != null && !user.getName().isEmpty())
         tempUser.setName(user.getName());
+        if(user.getPassword()!=null)
         if(passwordValidator.isValidPassword(user.getPassword())){
             tempUser.setPassword(user.getPassword());
         }
@@ -86,5 +89,22 @@ public class UserDaoImpl implements UserDAO{
     @Override
     public User getById(int id) {
         return entityManager.find(User.class, id);
+    }
+
+    @Override
+    public UserResponse getUserResponseById(int id) {
+        System.out.println(id);
+        return entityManager.createQuery(
+                "SELECT new com.PrakharRohra.AnonymousFeedback.model.response.UserResponse(u.name, u.email,u.id,u.manager.id) FROM User u WHERE u.id = :id",
+                UserResponse.class
+        ).setParameter("id",id)
+                .getSingleResult();
+    }
+    @Override
+    public int getCEOId(Role CEO){
+        String queryStr = "SELECT u FROM User u WHERE u.role = :CEO";
+        TypedQuery<User> query = entityManager.createQuery(queryStr, User.class);
+        query.setParameter("CEO", CEO);
+        return query.getSingleResult().getId();
     }
 }

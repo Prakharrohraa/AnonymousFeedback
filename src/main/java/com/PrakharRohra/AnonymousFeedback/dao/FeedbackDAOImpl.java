@@ -49,7 +49,7 @@ public class FeedbackDAOImpl implements FeedbackDAO {
     @Override
     public List<FeedbackDTO> getAllFeedbacks() {
         return entityManager.createQuery(
-                "SELECT new com.PrakharRohra.AnonymousFeedback.model.dto.FeedbackDTO(f.id, f.receiver.id, f.receiver.manager.id,f.message,f.receiver.name) FROM Feedback f",
+                "SELECT new com.PrakharRohra.AnonymousFeedback.model.dto.FeedbackDTO(f.id, f.receiver.id, f.receiver.manager.id,f.message,f.receiver.name) FROM Feedback f where NOT f.receiver.id=1",
                 FeedbackDTO.class
         ).getResultList();
     }

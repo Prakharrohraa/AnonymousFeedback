@@ -2,6 +2,7 @@ package com.PrakharRohra.AnonymousFeedback.dao;
 
 import com.PrakharRohra.AnonymousFeedback.model.entity.User;
 import com.PrakharRohra.AnonymousFeedback.model.dto.UserDTO;
+import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
 import com.PrakharRohra.AnonymousFeedback.model.response.UserResponse;
 
 import java.util.List;
@@ -22,4 +23,8 @@ public interface UserDAO {
     User getByEmail(String email);
 
     User getById(int id);
+
+    UserResponse getUserResponseById(int id);
+
+    int getCEOId(Role CEO);
 }

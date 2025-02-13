@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -23,6 +25,7 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @CrossOrigin("http://localhost:5173")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         // Delegate the login logic to AuthService
@@ -55,7 +58,13 @@ public class AuthController {
     }
 
     @PostMapping("/resend-otp")
-    public ResponseEntity<?> resendOTP(@RequestParam String email) {
+    public ResponseEntity<String> resendOtp(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email"); // Extract email from request
+        System.out.println("Email received for OTP resend: " + email); // Debugging log
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+
         try {
             authService.resendVerificationCode(email);
             return ResponseEntity.ok("OTP resent successfully");
@@ -63,5 +72,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 
 }

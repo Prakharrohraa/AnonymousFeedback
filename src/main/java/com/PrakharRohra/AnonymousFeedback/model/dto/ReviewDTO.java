@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 public class ReviewDTO {
 
     private int id;
-    private int receiverId;            // Feedback ID
+    private int receiverId;// Feedback ID
+    private String receiverName;
     private String Message;      // Feedback content
     private LocalDateTime createdAt; // When the feedback was created
     private LocalDateTime updatedAt; // When the feedback was updated
@@ -65,5 +66,14 @@ public class ReviewDTO {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public String getReceiverName() {
+        return receiverName;
+    }
+
+    public void setReceiverName(String receiverName) {
+        this.receiverName = receiverName;
+    }
+
     // Add any other necessary fields that you want the manager to see
 }

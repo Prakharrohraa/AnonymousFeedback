@@ -1,6 +1,7 @@
 package com.PrakharRohra.AnonymousFeedback.model.entity;
 
 import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -14,6 +15,8 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    private boolean isDeleted = false;
 
     @Column(nullable = false, unique = true)
     private String email; // Used as the username for authentication
@@ -33,6 +36,7 @@ public class User {
     @JsonManagedReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")
+    @JsonIgnore
     private User manager;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -41,6 +45,7 @@ public class User {
     @Column(name = "verification_expiration")
     private LocalDateTime verificationCodeExpiresAt;
     private boolean enabled;
+
 
     public String getName() {
         return name;
@@ -107,4 +112,12 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
 }

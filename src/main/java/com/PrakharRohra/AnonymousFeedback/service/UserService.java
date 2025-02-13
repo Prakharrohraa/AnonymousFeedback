@@ -46,9 +46,14 @@ public class UserService {
 //        tempUser.setEmail(user.getEmail());
 //        tempUser.setName(user.getName());
 //        tempUser.setRole(user.getRole());
-
         userDAO.update(user,tempUser,requester.getRole().equals("HR"));
         return tempUser;
+    }
+    public UserResponse getUserResponseById(int id,String requesterEmail) {
+        if(!userDAO.getById(id).getEmail().equals(requesterEmail)) {
+            throw new IllegalArgumentException("Unauthorized request");
+        }
+        return userDAO.getUserResponseById(id);
     }
 
 }

@@ -48,14 +48,17 @@ public class AuthService {
         boolean isHR=false;
         boolean isCEO=false;
         boolean isManager=false;
+        int id = user.getId();
         for(int i=0;i<users.size();i++){
             if(users.get(i).getManager() == user){
                 isManager=true;
             }
         }
+        System.out.println(id);
         if(user.getRole()==(Role.HR))isHR=true;
         if(user.getRole()==Role.CEO)isCEO=true;
-        LoginResponse loginResponse = new LoginResponse(token,isHR,isCEO,isManager);
+        boolean isVerified = user.isEnabled();
+        LoginResponse loginResponse = new LoginResponse(token,isHR,isCEO,isManager,isVerified,id);
         return loginResponse;
 
     }
@@ -79,6 +82,24 @@ public class AuthService {
         System.out.println("Registering user with email: " + registerRequest.getEmail());
 
         User newUser = new User();
+        String email = registerRequest.getEmail().toLowerCase();
+        String name = "";
+        for(int i=0;i<email.length();i++) {
+            if (email.charAt(i) == '@') {
+                break;
+            }else if(email.charAt(i)=='.') {
+                name+=' ';
+            }
+            else if(i==0){
+                name+=(email.charAt(i)-'a'+'A');
+            }else if(email.charAt(i)>='0' &&  email.charAt(i)<='9') {
+                continue;
+            }
+            else {
+                name += email.charAt(i);
+            }
+        }
+        newUser.setName(name);
         newUser.setEmail(registerRequest.getEmail());
         newUser.setPassword(registerRequest.getPassword());
         newUser.setPhoneNumber(registerRequest.getPhoneNumber());
@@ -86,6 +107,8 @@ public class AuthService {
         newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         sendVerificationEmail(newUser);
         newUser.onCreate();
+        int managerId = userDAO.getCEOId(Role.CEO);
+        newUser.setManager(userDAO.getById(managerId));
         userDAO.create(newUser);
     }
     public void verifyUser(VerifyUserDTO input) {

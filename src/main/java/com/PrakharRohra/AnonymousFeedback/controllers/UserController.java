@@ -18,12 +18,17 @@ public class UserController {
     UserController(UserService userService) {
         this.userService = userService;
     }
+
     @GetMapping("/getall")
     public ResponseEntity<List<UserResponse>> getAll() {
         return ResponseEntity.ok(userService.getAll());
     }
+
+
     @PutMapping("/{id}/update")
     public ResponseEntity<User> updateUser(@PathVariable int id, @RequestBody UserDTO user, HttpServletRequest request) {
+
+        System.out.println(user);
         String requesterEmail = (String) request.getAttribute("requesterEmail"); // Get email from interceptor
         if (requesterEmail == null) {
             return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).build();
@@ -31,6 +36,16 @@ public class UserController {
 
         User updatedUser = userService.updateUser(id, user, requesterEmail);
         return ResponseEntity.ok(updatedUser);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable int id, HttpServletRequest request) {
+        String requesterEmail = (String) request.getAttribute("requesterEmail");
+        if (requesterEmail == null) {
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).build();
+        }
+        UserResponse userResponse = userService.getUserResponseById(id,requesterEmail);
+        return ResponseEntity.ok(userResponse);
+
     }
 
 

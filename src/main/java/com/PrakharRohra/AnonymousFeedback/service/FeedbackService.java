@@ -23,14 +23,14 @@ public class FeedbackService {
     }
 
     public void createFeedback(FeedbackRequest feedbackRequest) {
-        User receiver = userDAO.read(feedbackRequest.getReceiverId());
+        User receiver = userDAO.getByEmail(feedbackRequest.getReceiverEmail());
         if (receiver == null) {
-            throw new RuntimeException("Receiver not found with ID: " + feedbackRequest.getReceiverId());
+            throw new RuntimeException("Receiver not found with Email: " + feedbackRequest.getReceiverEmail());
         }
         Feedback feedback = new Feedback();
         feedback.setReceiver(receiver);
         feedback.setMessage(feedbackRequest.getMessage());
-        if(feedback.getReceiver().getId() == 1)
+        if(receiver.getId() == 1)
         feedback.setStatus(Status.PENDING);
         else feedback.setStatus(Status.APPROVED);
         feedbackDAO.create(feedback);

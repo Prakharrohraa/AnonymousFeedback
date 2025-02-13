@@ -18,6 +18,12 @@ public class CEOController {
         this.ceoService = ceoService;
     }
 
+    @RequestMapping(value = "/approved-reviews", method = RequestMethod.OPTIONS)
+    public ResponseEntity<?> handleOptions() {
+        return ResponseEntity.ok().build();
+    }
+
+    @CrossOrigin("http://localhost:5173")
     // Get all approved feedbacks for the company (CEO view)
     @GetMapping("/approved-reviews")
     public ResponseEntity<List<ReviewDTO>> getApprovedCompanyReviews( HttpServletRequest request) {

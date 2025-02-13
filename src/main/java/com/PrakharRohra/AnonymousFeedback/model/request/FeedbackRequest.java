@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class FeedbackRequest {
-    private int receiverId;
+    private String receiverEmail;
     private String message;
 
 }

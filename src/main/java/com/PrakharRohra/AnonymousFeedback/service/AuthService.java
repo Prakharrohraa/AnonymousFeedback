@@ -1,5 +1,8 @@
 package com.PrakharRohra.AnonymousFeedback.service;
 
+import com.PrakharRohra.AnonymousFeedback.exception.BadRequestException;
+import com.PrakharRohra.AnonymousFeedback.exception.ResourceNotFoundException;
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.entity.User;
 import com.PrakharRohra.AnonymousFeedback.dao.UserDAO;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
@@ -8,12 +11,17 @@ import com.PrakharRohra.AnonymousFeedback.model.request.RegisterRequest;
 import com.PrakharRohra.AnonymousFeedback.model.dto.VerifyUserDTO;
 import com.PrakharRohra.AnonymousFeedback.jwt.JwtTokenProvider;
 import com.PrakharRohra.AnonymousFeedback.model.response.LoginResponse;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import com.PrakharRohra.AnonymousFeedback.util.PasswordValidator;
 import jakarta.mail.MessagingException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.PrakharRohra.AnonymousFeedback.service.EmailValidationService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +33,7 @@ public class AuthService {
     private final UserDAO userDAO;
     private final EmailService emailService;
     private final PasswordValidator passwordValidator;
-
+    @Autowired
     public AuthService(JwtTokenProvider jwtTokenProvider, UserDAO userDAO, EmailService emailService, PasswordValidator passwordValidator) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDAO = userDAO;
@@ -35,28 +43,31 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest loginRequest) {
         // Fetch all users and find the matching one (since UserDAO lacks a direct find-by-username method)
-        List<User> users = userDAO.getAllUsers();
-        User user = users.stream()
-                .filter(u -> u.getEmail().equals(loginRequest.getEmail()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userDAO.getByEmail(loginRequest.getEmail());
         // Validate password, we still have to hash the password
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+        if(user==null) {
+            throw new BadRequestException(Constants.INVALID_CREDENTIALS);
         }
+        if(!user.isEnabled()){
+            throw new UnauthorizedException(Constants.NOT_VERIFIED);
+        }
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String hashedPassword = passwordEncoder.encode(loginRequest.getPassword());
+        System.out.println(hashedPassword);
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new UnauthorizedException(Constants.INVALID_CREDENTIALS);
+        }
+
+
         String token = jwtTokenProvider.generateToken(user);
         boolean isHR=false;
         boolean isCEO=false;
-        boolean isManager=false;
         int id = user.getId();
-        for(int i=0;i<users.size();i++){
-            if(users.get(i).getManager() == user){
-                isManager=true;
-            }
-        }
+        boolean isManager= userDAO.isManager(id);
         System.out.println(id);
         if(user.getRole()==(Role.HR))isHR=true;
         if(user.getRole()==Role.CEO)isCEO=true;
+
         boolean isVerified = user.isEnabled();
         LoginResponse loginResponse = new LoginResponse(token,isHR,isCEO,isManager,isVerified,id);
         return loginResponse;
@@ -69,18 +80,16 @@ public class AuthService {
         boolean exists = users.stream().anyMatch(u -> u.getEmail().equals(registerRequest.getEmail()));
 
         if (exists) {
-            throw new ResponseStatusException(409,"User already exists",null);
+            throw new BadRequestException(Constants.EMAIL_ALREADY_EXISTS);
         }
-        boolean isEmailValid = registerRequest.getEmail().contains("@ongrid.in");
-        if (!isEmailValid) {
-            throw new ResponseStatusException(400,"Email address not valid",null);
+        boolean isValidEmail = registerRequest.getEmail().contains("@ongrid.in");
+        if (!isValidEmail) {
+            throw new UnauthorizedException(Constants.INVALID_EMAIL);
         }
         if(!passwordValidator.isValidPassword(registerRequest.getPassword())){
-            throw new ResponseStatusException(400,"Password not valid",null);
+            throw new UnauthorizedException(Constants.INVALID_CREDENTIALS);
         }
-
         System.out.println("Registering user with email: " + registerRequest.getEmail());
-
         User newUser = new User();
         String email = registerRequest.getEmail().toLowerCase();
         String name = "";
@@ -90,23 +99,25 @@ public class AuthService {
             }else if(email.charAt(i)=='.') {
                 name+=' ';
             }
-            else if(i==0){
-                name+=(email.charAt(i)-'a'+'A');
-            }else if(email.charAt(i)>='0' &&  email.charAt(i)<='9') {
+            else if(email.charAt(i)>='0' &&  email.charAt(i)<='9') {
                 continue;
             }
             else {
                 name += email.charAt(i);
             }
         }
+
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String hashedPassword = passwordEncoder.encode(registerRequest.getPassword());
         newUser.setName(name);
         newUser.setEmail(registerRequest.getEmail());
-        newUser.setPassword(registerRequest.getPassword());
+        newUser.setPassword(hashedPassword);
         newUser.setPhoneNumber(registerRequest.getPhoneNumber());
         newUser.setVerificationCode(generateVerificationCode());
         newUser.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         sendVerificationEmail(newUser);
         newUser.onCreate();
+        newUser.setRole(Role.Employee);
         int managerId = userDAO.getCEOId(Role.CEO);
         newUser.setManager(userDAO.getById(managerId));
         userDAO.create(newUser);
@@ -116,7 +127,7 @@ public class AuthService {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             if(user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())){
-                throw new RuntimeException("Verification code expired");
+                throw new BadRequestException(Constants.VERIFICATION_CODE_EXPIRED);
             }
             if(user.getVerificationCode().equals(input.getVerificationCode())){
                 user.setEnabled(true);
@@ -124,7 +135,7 @@ public class AuthService {
                 user.setVerificationCodeExpiresAt(null);
                 userDAO.create(user);
             } else{
-                throw new RuntimeException("Verification code not valid");
+                throw new BadRequestException(Constants.VERIFICATION_CODE_INVALID);
             }
 
         }else{
@@ -137,17 +148,24 @@ public class AuthService {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             if(user.isEnabled()){
-                throw new RuntimeException("User already enabled");
+                throw new BadRequestException(Constants.USER_ALREADY_VERIFIED);
             }
             user.setVerificationCode(generateVerificationCode());
             user.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
             sendVerificationEmail(user);
             userDAO.create(user);
         }else{
-            throw new RuntimeException("User not found");
+            throw new UnauthorizedException(Constants.INVALID_CREDENTIALS);
         }
     }
     public void sendVerificationEmail(User user) {
+        String email = user.getEmail();
+
+        // Step 1: Validate if the email exists
+//        if (!isEmailValid(email)) {
+//            throw new ResourceNotFoundException(Constants.INVALID_EMAIL);
+//        }
+
         String subject = "Verification Code";
         String verificationCode = user.getVerificationCode();
         String htmlMessage = "<html>"
@@ -162,11 +180,26 @@ public class AuthService {
                 + "</div>"
                 + "</body>"
                 + "</html>";
+
+        // Step 3: Send the email
         try {
-            emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
+            emailService.sendVerificationEmail(email, subject, htmlMessage);
         } catch (MessagingException e) {
-            // Handle email sending exception
-            e.printStackTrace();
+            throw new ResourceNotFoundException(Constants.FAILED_TO_MAIL);
+        }
+    }
+
+    // Helper method to validate email existence
+    private boolean isEmailValid(String email) {
+        // Use an email validation API or service to check if the email exists
+        // Example: Use a third-party API like ZeroBounce, NeverBounce, or MailboxValidator
+        System.out.println("isEmailValid: " + email);
+        try {
+            EmailValidationService validationService = new EmailValidationService();
+            boolean flag = validationService.validateEmail(email); // Assume this returns true if the email exists
+            return flag;
+        } catch (Exception e) {
+            throw new ResourceNotFoundException(Constants.INVALID_EMAIL);
         }
     }
 

@@ -1,11 +1,14 @@
 package com.PrakharRohra.AnonymousFeedback.service;
 
+import com.PrakharRohra.AnonymousFeedback.exception.ResourceNotFoundException;
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
 import com.PrakharRohra.AnonymousFeedback.model.entity.Feedback;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Status;
 import com.PrakharRohra.AnonymousFeedback.dao.FeedbackDAO;
 import com.PrakharRohra.AnonymousFeedback.dao.UserDAO;
 import com.PrakharRohra.AnonymousFeedback.model.dto.ReviewDTO;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,9 +32,10 @@ public class HRService {
     // Fetch all pending reviews for HR (where receiverId = 1 and status = PENDING)
     public List<ReviewDTO> getPendingReviewsForHR(String requesterEmail) {
         if(userDAO.getByEmail(requesterEmail).getRole() != Role.HR) {
-            throw new ResponseStatusException(400, "HR approval requester not found",null);
+            throw new UnauthorizedException(Constants.NOT_A_HR);
         }
-        List<Feedback> feedbackList = feedbackDAO.findByReceiverIdAndStatus(1, Status.PENDING);
+        int ceoID = userDAO.getCEOId(Role.CEO);
+        List<Feedback> feedbackList = feedbackDAO.findByReceiverIdAndStatus(ceoID, Status.PENDING);
         //change it so that we dont have to use *
         //pagination
         return feedbackList.stream()
@@ -42,12 +46,12 @@ public class HRService {
     public void approveReview(int reviewId,String requesterEmail) {
         System.out.println(requesterEmail);
         if(!userDAO.getByEmail(requesterEmail).getRole().equals(Role.HR)) {
-            throw new ResponseStatusException(400, "HR approval requester not found",null);
+            throw new UnauthorizedException(Constants.NOT_A_HR);
         }
         Feedback feedback = feedbackDAO.find(reviewId);
         System.out.println(feedback);
         if (feedback == null ) {
-            throw new ResponseStatusException(400, "Pending review not found for HR approval",null);
+            throw new ResourceNotFoundException();
         }
 
         feedback.setStatus(Status.APPROVED);  // Change status

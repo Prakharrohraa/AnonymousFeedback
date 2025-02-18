@@ -30,6 +30,8 @@ public class Feedback {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private boolean isDeleted = false;
+
     // Getters and Setters
     public int getId() {
         return id;
@@ -65,5 +67,13 @@ public class Feedback {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 }

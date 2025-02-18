@@ -27,4 +27,6 @@ public interface UserDAO {
     UserResponse getUserResponseById(int id);
 
     int getCEOId(Role CEO);
+
+    boolean isManager(int id);
 }

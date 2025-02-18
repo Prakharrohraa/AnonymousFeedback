@@ -35,6 +35,13 @@ dependencies {
 	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 	implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
 	implementation 'org.glassfish:jakarta.el:4.0.0'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+//	implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1' // Use the latest version
+//	implementation 'org.apache.httpcomponents.core5:httpcore5:5.2'
+//	implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1' // Use the latest version
+//	implementation 'org.apache.httpcomponents.core5:httpcore5:5.2' // Use the latest version
+//	implementation 'org.apache.httpcomponents.client5:httpclient5-ssl:5.2.1' // Use the latest version
+//	implementation 'org.apache.httpcomponents:httpclient:4.5.13' // Use the latest version
 }
 
 

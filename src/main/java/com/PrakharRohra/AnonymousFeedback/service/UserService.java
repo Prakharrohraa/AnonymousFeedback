@@ -1,9 +1,12 @@
 package com.PrakharRohra.AnonymousFeedback.service;
 
+import com.PrakharRohra.AnonymousFeedback.exception.BadRequestException;
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.entity.User;
 import com.PrakharRohra.AnonymousFeedback.dao.UserDAO;
 import com.PrakharRohra.AnonymousFeedback.model.dto.UserDTO;
 import com.PrakharRohra.AnonymousFeedback.model.response.UserResponse;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +25,7 @@ public class UserService {
     public User updateUser(int id, UserDTO user, String requesterEmail) {
         User tempUser = userDAO.getById(id);
         if (tempUser == null) {
-            throw new IllegalArgumentException("User not found");
+            throw new BadRequestException(Constants.NOT_EXISTS);
         }
         System.out.println(requesterEmail);
         System.out.println(user.getEmail());
@@ -30,11 +33,11 @@ public class UserService {
         // Get the requesting user from the database
         User requester = userDAO.getByEmail(requesterEmail);
         if (requester == null) {
-            throw new IllegalArgumentException("Unauthorized request");
+            throw new UnauthorizedException();
         }
         // Ensure that only the Head of HR or the user themselves can update
         if (!requester.getRole().equals("HR") && !(tempUser.getEmail().equals(requesterEmail))) {
-            throw new IllegalArgumentException("User not authorized to update this profile");
+            throw new UnauthorizedException();
         }
 
         // Prevent changing ID
@@ -51,7 +54,7 @@ public class UserService {
     }
     public UserResponse getUserResponseById(int id,String requesterEmail) {
         if(!userDAO.getById(id).getEmail().equals(requesterEmail)) {
-            throw new IllegalArgumentException("Unauthorized request");
+            throw new UnauthorizedException();
         }
         return userDAO.getUserResponseById(id);
     }

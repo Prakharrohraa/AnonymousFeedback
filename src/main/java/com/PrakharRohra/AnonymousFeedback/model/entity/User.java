@@ -26,7 +26,6 @@ public class User {
     @Column(nullable = true)
     private String phoneNumber;
 
-    @Size(min = 8, max = 30)
     @Column(nullable = false)
     private String password; // Hashed password for authentication
 

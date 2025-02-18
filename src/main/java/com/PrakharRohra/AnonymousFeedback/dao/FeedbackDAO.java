@@ -14,4 +14,5 @@ public interface FeedbackDAO {
     List<FeedbackDTO> getAllFeedbacks();
     List<Feedback> findReviewsByManagerId(int managerId);
     List<Feedback> findByReceiverIdAndStatus(int receiverId, Status status);
+    void rejectFeedback(int feedbackId);
 }

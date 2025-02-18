@@ -28,7 +28,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 requestURI.contains("/api/auth/register") ||
                 requestURI.contains("/api/auth/verify") ||
                 requestURI.contains("/api/auth/resend-otp") ||
-                requestURI.contains("/error")) {
+                requestURI.contains("/error") || requestURI.contains("/reject")) {
             return true;
         }
 

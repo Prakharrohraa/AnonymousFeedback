@@ -1,11 +1,13 @@
 package com.PrakharRohra.AnonymousFeedback.service;
 
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
 import com.PrakharRohra.AnonymousFeedback.model.entity.Feedback;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Status;
 import com.PrakharRohra.AnonymousFeedback.dao.FeedbackDAO;
 import com.PrakharRohra.AnonymousFeedback.dao.UserDAO;
 import com.PrakharRohra.AnonymousFeedback.model.dto.ReviewDTO;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +28,10 @@ public class CEOService {
     // Fetch all APPROVED feedbacks for the company (CEO)
     public List<ReviewDTO> getApprovedCompanyReviews(String requesterEmail) {
         if(userDAO.getByEmail(requesterEmail).getRole()!= Role.CEO ) {
-            throw new IllegalArgumentException("You are not allowed to view approved company reviews");
+            throw new UnauthorizedException(Constants.NOT_A_CEO);
         }
-        List<Feedback> feedbackList = feedbackDAO.findByReceiverIdAndStatus(1, Status.APPROVED);
+        int id = userDAO.getByEmail(requesterEmail).getId();
+        List<Feedback> feedbackList = feedbackDAO.findByReceiverIdAndStatus(id, Status.APPROVED);
         return feedbackList.stream()
                 .map(this::convertToReviewDTO)
                 .collect(Collectors.toList());

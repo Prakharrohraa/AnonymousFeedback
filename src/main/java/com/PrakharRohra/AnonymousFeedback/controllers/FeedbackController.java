@@ -31,6 +31,12 @@ public class FeedbackController {
         return ResponseEntity.ok(feedback);
     }
 
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<String> rejectFeedback(@PathVariable int id) {
+        feedbackService.rejectFeedback(id);
+        return ResponseEntity.ok("Feedback rejected successfully");
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<FeedbackDTO>> getAllFeedbacks() {
         return ResponseEntity.ok(feedbackService.getAllFeedbacks());

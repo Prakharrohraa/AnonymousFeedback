@@ -1,9 +1,11 @@
 package com.PrakharRohra.AnonymousFeedback.service;
 
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.entity.Feedback;
 import com.PrakharRohra.AnonymousFeedback.dao.FeedbackDAO;
 import com.PrakharRohra.AnonymousFeedback.dao.UserDAO;
 import com.PrakharRohra.AnonymousFeedback.model.dto.ReviewDTO;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +29,7 @@ public class ManagerService {
         System.out.println(requesterEmail);
         System.out.println(userDAO.getById(managerId).getEmail());
         if(!requesterEmail.equals(userDAO.getById(managerId).getEmail())) {
-            throw new IllegalArgumentException("The requester email doesn't match the manager email");
+            throw new UnauthorizedException(Constants.NOT_CORRECT_MANAGER);
         }
         List<Feedback> feedbackList = feedbackDAO.findReviewsByManagerId(managerId);
         return feedbackList.stream()

@@ -1,9 +1,13 @@
 package com.PrakharRohra.AnonymousFeedback.dao;
 
+import com.PrakharRohra.AnonymousFeedback.exception.BadRequestException;
+import com.PrakharRohra.AnonymousFeedback.exception.ResourceNotFoundException;
+import com.PrakharRohra.AnonymousFeedback.exception.UnauthorizedException;
 import com.PrakharRohra.AnonymousFeedback.model.entity.User;
 import com.PrakharRohra.AnonymousFeedback.model.dto.UserDTO;
 import com.PrakharRohra.AnonymousFeedback.model.enums.Role;
 import com.PrakharRohra.AnonymousFeedback.model.response.UserResponse;
+import com.PrakharRohra.AnonymousFeedback.util.Constants;
 import com.PrakharRohra.AnonymousFeedback.util.PasswordValidator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -32,12 +36,23 @@ public class UserDaoImpl implements UserDAO{
 
     @Override
     public User read(int id){
-        return entityManager.find(User.class, id);
+        User user = entityManager.createQuery(
+                "select u from User u where u.id = :id And u.isDeleted = false",
+                User.class
+        ).setParameter("id", id).getSingleResult();
+        if(user == null){
+            throw new ResourceNotFoundException(Constants.NOT_EXISTS);
+        }
+        return user;
     }
 
     @Override
     public void update(UserDTO user, User tempUser,boolean isHR) {
 //        tempUser.setEmail(user.getEmail());
+        User userToUpdate = entityManager.find(User.class, tempUser.getId());
+        if(userToUpdate == null || userToUpdate.isDeleted()){
+            throw new ResourceNotFoundException(Constants.NOT_EXISTS);
+        }
         if(user.getName() != null && !user.getName().isEmpty())
         tempUser.setName(user.getName());
         if(user.getPassword()!=null)
@@ -56,55 +71,73 @@ public class UserDaoImpl implements UserDAO{
 
     @Override
     public void delete(int id) {
-        entityManager.remove(entityManager.find(User.class, id));
+        User user = entityManager.find(User.class, id);
+        user.setDeleted(true);
         return;
     }
 
     @Override
     public List<UserResponse> getAll() {
         return entityManager.createQuery(
-                "SELECT new com.PrakharRohra.AnonymousFeedback.model.response.UserResponse(u.name, u.email,u.id,u.manager.id) FROM User u ",
+                "SELECT new com.PrakharRohra.AnonymousFeedback.model.response.UserResponse(u.name, u.email,u.id,u.manager.id) FROM User u where u.isDeleted = false and u.enabled = true",
                 UserResponse.class
         ).getResultList();
     }
     @Override
     public List<User> getAllUsers(){
-        return entityManager.createQuery("SELECT u FROM User u").getResultList();
+        return entityManager.createQuery("SELECT u FROM User u where u.isDeleted = false AND u.enabled = true ").getResultList();
     }
 
     @Override
     public List<User> findSubordinatesByManagerId(int managerId) {
         return entityManager.createQuery(
-                        "SELECT u FROM User u WHERE u.manager.id = :managerId", User.class)
+                        "SELECT u FROM User u WHERE u.manager.id = :managerId and u.isDeleted = false", User.class)
                 .setParameter("managerId", managerId)
                 .getResultList();
     }
     @Override
     public User getByEmail(String email) {
-        String queryStr = "SELECT u FROM User u WHERE u.email = :email";
+        String queryStr = "SELECT u FROM User u WHERE u.email = :email and u.isDeleted = false";
         TypedQuery<User> query = entityManager.createQuery(queryStr, User.class);
         query.setParameter("email", email);
         return query.getResultList().stream().findFirst().orElse(null); // Return first result or null if not found
     }
     @Override
     public User getById(int id) {
-        return entityManager.find(User.class, id);
+        User user = entityManager.createQuery(
+                "Select u from User u where u.id = :id and u.isDeleted = false",
+                User.class
+        )
+                .setParameter("id", id).getSingleResult();
+        if(user == null){
+            throw new ResourceNotFoundException(Constants.NOT_EXISTS);
+        }
+        return user;
+
     }
 
     @Override
     public UserResponse getUserResponseById(int id) {
         System.out.println(id);
         return entityManager.createQuery(
-                "SELECT new com.PrakharRohra.AnonymousFeedback.model.response.UserResponse(u.name, u.email,u.id,u.manager.id) FROM User u WHERE u.id = :id",
+                "SELECT new com.PrakharRohra.AnonymousFeedback.model.response.UserResponse(u.name, u.email,u.id,u.manager.id) FROM User u WHERE u.id = :id and u.isDeleted = false",
                 UserResponse.class
         ).setParameter("id",id)
                 .getSingleResult();
     }
     @Override
     public int getCEOId(Role CEO){
-        String queryStr = "SELECT u FROM User u WHERE u.role = :CEO";
+        String queryStr = "SELECT u FROM User u WHERE u.role = :CEO and u.isDeleted = false";
         TypedQuery<User> query = entityManager.createQuery(queryStr, User.class);
         query.setParameter("CEO", CEO);
         return query.getSingleResult().getId();
+    }
+
+    @Override
+    public boolean isManager(int id) {
+        String queryStr = "Select u FROm User u WHERE u.manager.id = :id and u.isDeleted = false";
+        TypedQuery<User> query = entityManager.createQuery(queryStr, User.class);
+        query.setParameter("id", id);
+        return (query.getResultList().size() > 0);
     }
 }
